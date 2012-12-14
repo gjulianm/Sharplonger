@@ -1,8 +1,0 @@
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\obj\Release\ResolveAssemblyReference.cache
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\Bin\Release\Sharplonger.dll
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\Bin\Release\Sharplonger.pdb
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\Bin\Release\Hammock.WindowsPhone.dll
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\Bin\Release\ICSharpCode.SharpZipLib.WindowsPhone.dll
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\Bin\Release\Hammock.WindowsPhone.pdb
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\obj\Release\Sharplonger.dll
-C:\Users\Guillermo\Dropbox\Ocell\Ocell.WindowsPhone\Sharplonger\obj\Release\Sharplonger.pdb
