@@ -60,20 +60,21 @@ namespace Sharplonger
 
             TwitlongerResponse tlResponse = new TwitlongerResponse 
             {
-                Contents = response.Content,
+                Contents = response == null ? "" : response.Content,
                 Request = request,
-                StatusCode = response.StatusCode,
-                StatusDescription = response.StatusDescription,
+                StatusCode = response == null ? HttpStatusCode.InternalServerError : response.StatusCode,
+                StatusDescription = response == null ? "response is null" : response.StatusDescription,
                 Response = response,
                 Sender = this
             };
 
-            if(typeof(T) == typeof(string))
+            if(typeof(T) == typeof(string) && response != null)
                 deserialized = (T) (object) response.Content;
             else
                 deserialized = DeserializeObject<T>(response, tlResponse);
 
-            callback(deserialized, tlResponse);
+            if(callback != null)
+                callback(deserialized, tlResponse);
         }
 
         private T DeserializeObject<T>(RestResponse response, TwitlongerResponse tlResponse)
