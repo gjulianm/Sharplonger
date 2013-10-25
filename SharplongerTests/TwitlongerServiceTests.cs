@@ -4,34 +4,52 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Sharplonger;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
+using AncoraMVVM.Rest;
+
 namespace Sharplonger.Tests
 {
-    [TestClass()]
+    [TestFixture]
     public class TwitlongerServiceTests
     {
-        [TestMethod()]
-        public void TwitlongerServiceTest()
+        public TwitlongerService Service
         {
-            Assert.Fail();
+            get
+            {
+                return new TwitlongerService(SensitiveData.AppName, SensitiveData.ApiKey, "TestUser");
+            }
         }
 
-        [TestMethod()]
-        public void PostUpdateTest()
+        private async Task<T> TestEndpoint<T>(Func<Task<HttpResponse<T>>> task)
         {
-            Assert.Fail();
+            var response = await task();
+
+            Assert.IsTrue(response.Succeeded, "Request not suceeded. Error code {0}, inner exception {1}, response {2}", response.StatusCode, response.InnerException, response.StringContents);
+
+            return response.Content;
         }
 
-        [TestMethod()]
-        public void PostUpdateTest1()
+        private async Task TestEndpoint(Func<Task<HttpResponse>> task)
         {
-            Assert.Fail();
+            var response = await task();
+
+            Assert.IsTrue(response.Succeeded, "Request not suceeded. Error code {0}, inner exception {1}, response {2}", response.StatusCode, response.InnerException, response.StringContents);;
         }
 
-        [TestMethod()]
-        public void SetIdTest()
+        [Test]
+        [Ignore("Live update")]
+        public async Task PostUpdate()
         {
-            Assert.Fail();
+            await TestEndpoint(() => Service.PostUpdate(DateTime.Now.ToString("o")));
+        }
+        
+        [Test]
+        [Ignore("Live update")]
+        public async Task SetId()
+        {
+            var response = await Service.PostUpdate(DateTime.Now.ToString("o"));
+
+            await TestEndpoint(() => Service.SetId(response.Content.Post.Id, 1000));
         }
     }
 }
