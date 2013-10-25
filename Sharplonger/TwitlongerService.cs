@@ -1,133 +1,82 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
-using Hammock.Web;
-using Hammock;
-using System.Xml;
-using System.Xml.Serialization;
+﻿using AncoraMVVM.Rest;
 using System.IO;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace Sharplonger
 {
-    public class TwitlongerService
+    public class TwitlongerService : BaseService
     {
         private string appName;
         private string apiKey;
         private string username;
-        RestClient client;
         XmlSerializer serializer;
 
         public string Username { get { return username; } }
 
         public TwitlongerService(string app, string key, string user)
+            : base(new HttpService())
         {
             appName = app;
             apiKey = key;
             username = user;
 
-            client = new RestClient();
-            client.Authority = "http://www.twitlonger.com/";
+            Authority = "http://www.twitlonger.com/";
+            BasePath = "";
             serializer = new XmlSerializer(typeof(TwitlongerPost));
+
+            PersistentUrlParameters.Add("application", appName);
+            PersistentUrlParameters.Add("api_key", apiKey);
+            PersistentUrlParameters.Add("username", username);
         }
 
-        void WithHammock<T>(string url, WebMethod method, WebParameterCollection parameters, Action<T, TwitlongerResponse> callback)
+        protected override T Deserialize<T>(string content)
         {
-            RestRequest request = new RestRequest();
-            request.Path = url;
-            request.Method = method;
-
-            foreach (var parameter in parameters)
-                request.AddParameter(parameter.Name, parameter.Value);
-
-            AddAuthentication(request);
-
-            client.BeginRequest(request, ClientCallback<T>, callback);
-        }
-
-        void AddAuthentication(RestRequest request)
-        {
-            request.AddParameter("application", appName);
-            request.AddParameter("api_key", apiKey);
-            request.AddParameter("username", username);
-        }
-
-        void ClientCallback<T>(RestRequest request, RestResponse response, object userState)
-        {
-            Action<T, TwitlongerResponse> callback = userState as Action<T, TwitlongerResponse>;
-            T deserialized;
-
-            TwitlongerResponse tlResponse = new TwitlongerResponse 
-            {
-                Contents = response == null ? "" : response.Content,
-                Request = request,
-                StatusCode = response == null ? HttpStatusCode.InternalServerError : response.StatusCode,
-                StatusDescription = response == null ? "response is null" : response.StatusDescription,
-                Response = response,
-                Sender = this
-            };
-
-            if(typeof(T) == typeof(string) && response != null)
-                deserialized = (T) (object) response.Content;
-            else
-                deserialized = DeserializeObject<T>(response, tlResponse);
-
-            if(callback != null)
-                callback(deserialized, tlResponse);
-        }
-
-        private T DeserializeObject<T>(RestResponse response, TwitlongerResponse tlResponse)
-        {
-            T deserialized = default(T);;
-            byte[] buffer = Encoding.UTF8.GetBytes(response.Content);
+            T deserialized = default(T); ;
+            byte[] buffer = Encoding.UTF8.GetBytes(content);
 
             MemoryStream stream = null;
-            try
+            using (stream = new MemoryStream(buffer))
             {
-                stream = new MemoryStream(buffer);
                 deserialized = (T)serializer.Deserialize(stream);
-            }
-            catch (Exception e)
-            {
-                tlResponse.InternalException = e;
-            }
-            finally
-            {
-                if (stream != null)
-                    stream.Dispose();
             }
 
             return deserialized;
         }
 
+        protected override async Task<string> GetErrorMessage(HttpResponseMessage response)
+        {
+            var contents = await response.Content.ReadAsStringAsync();
+            Regex regex = new Regex("<error>(.*)</error>");
+
+            var match = regex.Match(contents);
+
+            if (match.Success)
+                return match.Groups[1].Value;
+            else
+                return "";
+        }
+
         #region Methods
-        public void PostUpdate(string message, Action<TwitlongerPost, TwitlongerResponse> callback)
+        public async Task<HttpResponse<TwitlongerPost>> PostUpdate(string message)
         {
-            WebParameterCollection collection = new WebParameterCollection();
-            collection.Add(new WebPair("message", message));
-
-            WithHammock<TwitlongerPost>("api_post", WebMethod.Post, collection, callback);
+            return await CreateAndExecute<TwitlongerPost>("api_post", HttpMethod.Post, "message", message);
         }
 
-        public void PostUpdate(string message, long replyId, string replyUser, Action<TwitlongerPost, TwitlongerResponse> callback)
+        public async Task<HttpResponse<TwitlongerPost>> PostUpdate(string message, long replyId, string replyUser)
         {
-            WebParameterCollection collection = new WebParameterCollection();
-            collection.Add(new WebPair("message", message));
-            collection.Add(new WebPair("in_reply", replyId.ToString()));
-            collection.Add(new WebPair("in_reply_user", replyUser));
-
-            WithHammock<TwitlongerPost>("api_post", WebMethod.Post, collection, callback);
+            return await CreateAndExecute<TwitlongerPost>("api_post", HttpMethod.Post, "message", message, "in_reply", replyId, "in_reply_user", replyUser);
         }
 
-        public void SetId(string messageId, long twitterId, Action<string, TwitlongerResponse> callback)
+        public async Task<HttpResponse> SetId(string messageId, long twitterId)
         {
-            WebParameterCollection collection = new WebParameterCollection();
-            collection.Add(new WebPair("message_id", messageId));
-            collection.Add(new WebPair("twitter_id", twitterId.ToString()));
-
-            WithHammock<string>("api_set_id", WebMethod.Post, collection, callback);
+            return await CreateAndExecute("api_set_id", HttpMethod.Post, "message_id", messageId, "twitter_id", twitterId);
         }
         #endregion
+
+
     }
 }
